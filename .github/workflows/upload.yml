@@ -1,0 +1,30 @@
+name: HEX Color Video Uploader
+
+on:
+  workflow_dispatch: # Чтобы можно было запустить вручную кнопкой
+  repository_dispatch:
+    types: [trigger_upload] # Для запуска через cron-job.org
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies and FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Run Script
+        env:
+          G_TOKEN_JSON: ${{ secrets.G_TOKEN_JSON }}
+        run: python main.py
+        
