@@ -111,19 +111,66 @@ def create_video(hex_code, music, output):
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
 
-    description = f"""Color Code: {hex_code}
+    # 1. Считаем RGB и HSL (даёт уникальные цифры для каждого цвета)
+    hex_clean = hex_code.lstrip('#')
+    r = int(hex_clean[0:2], 16)
+    g = int(hex_clean[2:4], 16)
+    b = int(hex_clean[4:6], 16)
+
+    r_n, g_n, b_n = r / 255.0, g / 255.0, b / 255.0
+    c_max, c_min = max(r_n, g_n, b_n), min(r_n, g_n, b_n)
+    lum = round(((c_max + c_min) / 2) * 100)
+
+    track_title = os.path.splitext(chosen_track)[0]
+
+    # 2. Три разных варианта структуры текста
+    desc_1 = f"""Color Code: {hex_code}
 This is a visual reference for the HEX color {hex_code}. 
 This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
 
 Technical Details:
 - HEX: {hex_code}
-- Music Track: {os.path.splitext(chosen_track)[0]}
+- RGB Values: rgb({r}, {g}, {b})
+- Luminance: {lum}%
+- Music Track: {track_title}
 - Project: Visual HEX Color Library
 
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
-Music by Kevin MacLeod: http://incompetech.com/music/
-"""
+Music by Kevin MacLeod: http://incompetech.com/music/"""
+
+    desc_2 = f"""HEX Color Display: {hex_code}
+
+Visual preview of the color shade {hex_code} (RGB: {r}, {g}, {b}).
+This upload is part of an automated archival project covering all 16,777,216 RGB colors.
+
+Specifications:
+- Color: {hex_code}
+- Red / Green / Blue: {r} / {g} / {b}
+- Audio Track: {track_title}
+- Archive: Visual HEX Color Library
+
+Licensed under Creative Commons Attribution 4.0:
+Source: http://incompetech.com/music/royalty-free/index.html
+Music by Kevin MacLeod: http://incompetech.com/music/"""
+
+    desc_3 = f"""Visual Reference for {hex_code}
+
+Color Shade: {hex_code}
+RGB Spectrum values: rgb({r}, {g}, {b}) | Lightness: {lum}%
+
+This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
+
+Audio & Credits:
+- Track: {track_title}
+- Project: Visual HEX Color Library
+
+Licensed under Creative Commons Attribution 4.0:
+Source: http://incompetech.com/music/royalty-free/index.html
+Music by Kevin MacLeod: http://incompetech.com/music/"""
+
+    # 3. Случайный выбор одного из 3 описаний
+    description = random.choice([desc_1, desc_2, desc_3])
 
     body = {
         'snippet': {
