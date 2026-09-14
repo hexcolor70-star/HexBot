@@ -10,43 +10,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4[cite: 2]
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5[cite: 2]
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'[cite: 2]
+          python-version: '3.10'
 
       # 1. Кэширование установленных pip-пакетов
       - name: Cache Pip Packages
         id: cache-pip
-        uses: actions/cache@v4[cite: 2]
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-google-libs
 
       # 2. Кэширование системного FFmpeg
       - name: Cache FFmpeg
-        id: cache-ffmpeg[cite: 2]
-        uses: actions/cache@v4[cite: 2]
+        id: cache-ffmpeg
+        uses: actions/cache@v4
         with:
-          path: /usr/bin/ffmpeg[cite: 2]
-          key: ${{ runner.os }}-ffmpeg[cite: 2]
+          path: /usr/bin/ffmpeg
+          key: ${{ runner.os }}-ffmpeg
 
       # 3. Установка FFmpeg ТОЛЬКО если его нет в кэше
       - name: Install FFmpeg
-        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'[cite: 2]
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update[cite: 2]
-          sudo apt-get install -y ffmpeg[cite: 2]
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
-      # 4. Установка зависимостей (при наличии кэша pip установит всё мгновенно)
+      # 4. Установка зависимостей
       - name: Install Python Dependencies
         run: |
-          python -m pip install --upgrade pip[cite: 2]
-          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib[cite: 2]
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
       - name: Run Script
         env:
-          G_TOKEN_JSON: ${{ secrets.G_TOKEN_JSON }}[cite: 2]
-        run: python main.py[cite: 2]
+          G_TOKEN_JSON: ${{ secrets.G_TOKEN_JSON }}
+        run: python main.py
