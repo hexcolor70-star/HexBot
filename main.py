@@ -111,7 +111,7 @@ def create_video(hex_code, music, output):
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
 
-    # 1. Считаем RGB и HSL (даёт уникальные цифры для каждого цвета)
+    # 1. Расчет RGB и HSL
     hex_clean = hex_code.lstrip('#')
     r = int(hex_clean[0:2], 16)
     g = int(hex_clean[2:4], 16)
@@ -123,7 +123,7 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
 
     track_title = os.path.splitext(chosen_track)[0]
 
-    # 2. Три разных варианта структуры текста
+    # 2. Описание (3 шаблона)
     desc_1 = f"""Color Code: {hex_code}
 This is a visual reference for the HEX color {hex_code}. 
 This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
@@ -169,13 +169,32 @@ Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/"""
 
-    # 3. Случайный выбор одного из 3 описаний
     description = random.choice([desc_1, desc_2, desc_3])
 
+    # 3. Динамический пул тегов (берёт случайные 7-8 штук при каждом прогоне)
+    base_tags = [
+        hex_code, 
+        f"hex {hex_code}", 
+        f"rgb {r} {g} {b}", 
+        "hex color", 
+        "rgb spectrum", 
+        "color reference",
+        "color codes", 
+        "hex code preview", 
+        "color library", 
+        "aesthetic colors",
+        "color palette", 
+        "visual reference", 
+        "design colors"
+    ]
+    chosen_tags = random.sample(base_tags, k=8)
+
+    # 4. Сборка тела запроса (Название фиксированное)
     body = {
         'snippet': {
             'title': f"What does {hex_code} look like? | Color Code Preview",
-            'description': description
+            'description': description,
+            'tags': chosen_tags
         },
         'status': {
             'privacyStatus': 'public',
