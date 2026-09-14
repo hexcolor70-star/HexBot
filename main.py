@@ -95,11 +95,11 @@ def create_video(hex_code, music, output):
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. ИНТРО (0-4 сек)
-            f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=60:"
+            # 1. ИНТРО (0-4 сек): Крупный размер шрифта (fontsize=80)
+            f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=80:"
             f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v0];"
 
-            # 2. ТАЙМЕР (сверху справа, прозрачность 0.4 как у @HexCol)
+            # 2. ТАЙМЕР (сверху справа, прозрачность 0.4)
             f"[v0]drawtext=fontfile=font.ttf:text='%{{eif\\:trunc((300-t)/60)\\:d}}\\:%{{eif\\:mod((300-t),60)\\:d\\:2}}':"
             f"x=w-tw-50:y=50:fontsize=60:fontcolor=white@0.4[v1];"
 
@@ -107,12 +107,12 @@ def create_video(hex_code, music, output):
             f"[v1]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v2];"
             f"[v2]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v3];"
 
-            # 4. АУТРО (295-300 сек)
-            f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=64:"
-            f"x=(w-tw)/2:y=(h-th)/2-40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
+            # 4. АУТРО (295-300 сек): Увеличенные шрифты (fontsize=85 и fontsize=48)
+            f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=85:"
+            f"x=(w-tw)/2:y=(h-th)/2-60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
-            f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=36:"
-            f"x=(w-tw)/2:y=(h-th)/2+40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
+            f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=48:"
+            f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
 
             # 5. Fade In / Fade Out
             f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
@@ -134,7 +134,6 @@ def create_video(hex_code, music, output):
 
     logger.info(f"Видео {output} успешно создано.")
 
-
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
 
@@ -150,55 +149,7 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
 
     track_title = os.path.splitext(chosen_track)[0]
 
-    # 2. Описание (3 шаблона)
-    desc_1 = f"""Color Code: {hex_code}
-This is a visual reference for the HEX color {hex_code}. 
-This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
-
-Technical Details:
-- HEX: {hex_code}
-- RGB Values: rgb({r}, {g}, {b})
-- Luminance: {lum}%
-- Music Track: {track_title}
-- Project: Visual HEX Color Library
-
-Licensed under Creative Commons Attribution 4.0:
-Source: http://incompetech.com/music/royalty-free/index.html
-Music by Kevin MacLeod: http://incompetech.com/music/"""
-
-    desc_2 = f"""HEX Color Display: {hex_code}
-
-Visual preview of the color shade {hex_code} (RGB: {r}, {g}, {b}).
-This upload is part of an automated archival project covering all 16,777,216 RGB colors.
-
-Specifications:
-- Color: {hex_code}
-- Red / Green / Blue: {r} / {g} / {b}
-- Audio Track: {track_title}
-- Archive: Visual HEX Color Library
-
-Licensed under Creative Commons Attribution 4.0:
-Source: http://incompetech.com/music/royalty-free/index.html
-Music by Kevin MacLeod: http://incompetech.com/music/"""
-
-    desc_3 = f"""Visual Reference for {hex_code}
-
-Color Shade: {hex_code}
-RGB Spectrum values: rgb({r}, {g}, {b}) | Lightness: {lum}%
-
-This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
-
-Audio & Credits:
-- Track: {track_title}
-- Project: Visual HEX Color Library
-
-Licensed under Creative Commons Attribution 4.0:
-Source: http://incompetech.com/music/royalty-free/index.html
-Music by Kevin MacLeod: http://incompetech.com/music/"""
-
-    description = random.choice([desc_1, desc_2, desc_3])
-
-    # 3. Динамический пул тегов (берёт случайные 7-8 штук при каждом прогоне)
+    # 2. Динамический пул тегов (генерируем заранее, чтобы использовать и в API, и в описании)
     base_tags = [
         hex_code, 
         f"hex {hex_code}", 
@@ -216,7 +167,72 @@ Music by Kevin MacLeod: http://incompetech.com/music/"""
     ]
     chosen_tags = random.sample(base_tags, k=8)
 
-    # 4. Сборка тела запроса (Название фиксированное)
+    # Формируем строки для текста описания из выбранных тегов
+    keywords_str = ", ".join(chosen_tags)
+    # Делаем хэштеги (убираем пробелы из фраз для валидности хэштегов, например #hex00ff00)
+    hashtags_str = " ".join([f"#{tag.replace(' ', '')}" for tag in chosen_tags])
+
+    # 3. Описание (3 шаблона) с добавлением ключевых слов и хэштегов в конец
+    desc_1 = f"""Color Code: {hex_code}
+This is a visual reference for the HEX color {hex_code}. 
+This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
+
+Technical Details:
+- HEX: {hex_code}
+- RGB Values: rgb({r}, {g}, {b})
+- Luminance: {lum}%
+- Music Track: {track_title}
+- Project: Visual HEX Color Library
+
+Licensed under Creative Commons Attribution 4.0:
+Source: http://incompetech.com/music/royalty-free/index.html
+Music by Kevin MacLeod: http://incompetech.com/music/
+
+Keywords: {keywords_str}
+
+{hashtags_str}"""
+
+    desc_2 = f"""HEX Color Display: {hex_code}
+
+Visual preview of the color shade {hex_code} (RGB: {r}, {g}, {b}).
+This upload is part of an automated archival project covering all 16,777,216 RGB colors.
+
+Specifications:
+- Color: {hex_code}
+- Red / Green / Blue: {r} / {g} / {b}
+- Audio Track: {track_title}
+- Archive: Visual HEX Color Library
+
+Licensed under Creative Commons Attribution 4.0:
+Source: http://incompetech.com/music/royalty-free/index.html
+Music by Kevin MacLeod: http://incompetech.com/music/
+
+Keywords: {keywords_str}
+
+{hashtags_str}"""
+
+    desc_3 = f"""Visual Reference for {hex_code}
+
+Color Shade: {hex_code}
+RGB Spectrum values: rgb({r}, {g}, {b}) | Lightness: {lum}%
+
+This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
+
+Audio & Credits:
+- Track: {track_title}
+- Project: Visual HEX Color Library
+
+Licensed under Creative Commons Attribution 4.0:
+Source: http://incompetech.com/music/royalty-free/index.html
+Music by Kevin MacLeod: http://incompetech.com/music/
+
+Keywords: {keywords_str}
+
+{hashtags_str}"""
+
+    description = random.choice([desc_1, desc_2, desc_3])
+
+    # 4. Сборка тела запроса
     body = {
         'snippet': {
             'title': f"What does {hex_code} look like? | Color Code Preview",
@@ -237,7 +253,6 @@ Music by Kevin MacLeod: http://incompetech.com/music/"""
     )
     response = request.execute()
     logger.info(f"Загрузка завершена! Ссылка на видео: https://youtu.be/{response['id']}")
-
 
 def main():
     logger.info("Запуск одноразовой итерации бота...")
