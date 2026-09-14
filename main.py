@@ -81,13 +81,37 @@ def create_video(hex_code, music, output):
     if not os.path.exists("font.ttf"):
         raise FileNotFoundError("Шрифт font.ttf не найден в репозитории!")
 
+    # Варианты вопросов для интро
+    intro_texts = [
+        f"Do you like Color {hex_code}?",
+        f"Would you use {hex_code} in your design?",
+        f"How does {hex_code} make you feel?",
+        f"Is {hex_code} your style?",
+        f"What do you think of {hex_code}?"
+    ]
+    chosen_intro = random.choice(intro_texts)
+
     cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            f"[0:v]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5,"
-            f"drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4,"
+            # 1. ИНТРО (0-4 сек): Появление текста по центру
+            f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=60:"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='t/4'[v0];"
+
+            # 2. Основная плашка HEX и водянка @HexCol
+            f"[v0]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v1];"
+            f"[v1]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v2];"
+
+            # 3. АУТРО (295-300 сек): Плавный прояв 2 строк по центру
+            f"[v2]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=64:"
+            f"x=(w-tw)/2:y=(h-th)/2-40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v3];"
+            
+            f"[v3]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=36:"
+            f"x=(w-tw)/2:y=(h-th)/2+40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
+
+            # 4. Финальный Fade Out всего видео
             f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
