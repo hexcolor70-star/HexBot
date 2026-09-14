@@ -96,22 +96,27 @@ def create_video(hex_code, music, output):
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. ИНТРО (0-4 сек): Появление текста по центру
+            # 1. ИНТРО (0-4 сек): Мягкое появление до 2-й сек и плавное затухание к 4-й сек через синусоиду
             f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=60:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='t/4'[v0];"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v0];"
 
-            # 2. Основная плашка HEX и водянка @HexCol
-            f"[v0]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v1];"
-            f"[v1]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v2];"
+            # 2. ТАЙМЕР ОБРАТНОГО ОТСЧЕТА (сверху справа): 5:00 -> 0:00
+            f"[v0]drawtext=fontfile=font.ttf:"
+            f"text='%{{eif\\:trunc(({DURATION}-t)/60)\\:d}}%\\:%{{eif\\:mod(({DURATION}-t),60)\\:d\\:2}}':"
+            f"x=w-tw-50:y=50:fontsize=60:fontcolor=white:box=1:boxcolor=black@0.4[v1];"
 
-            # 3. АУТРО (295-300 сек): Плавный прояв 2 строк по центру
-            f"[v2]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=64:"
-            f"x=(w-tw)/2:y=(h-th)/2-40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v3];"
+            # 3. Основная плашка HEX и водянка @HexCol
+            f"[v1]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v2];"
+            f"[v2]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v3];"
+
+            # 4. АУТРО (295-300 сек): Плавный прояв 2 строк по центру
+            f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=64:"
+            f"x=(w-tw)/2:y=(h-th)/2-40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
-            f"[v3]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=36:"
+            f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=36:"
             f"x=(w-tw)/2:y=(h-th)/2+40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
 
-            # 4. Финальный Fade Out всего видео
+            # 5. Финальный Fade Out всего видео
             f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
