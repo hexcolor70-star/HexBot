@@ -81,7 +81,6 @@ def create_video(hex_code, music, output):
     if not os.path.exists("font.ttf"):
         raise FileNotFoundError("Шрифт font.ttf не найден в репозитории!")
 
-    # Варианты вопросов для интро
     intro_texts = [
         f"Do you like Color {hex_code}?",
         f"Would you use {hex_code} in your design?",
@@ -96,27 +95,26 @@ def create_video(hex_code, music, output):
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. ИНТРО (0-4 сек): Мягкое появление до 2-й сек и плавное затухание к 4-й сек через синусоиду
+            # 1. ИНТРО (0-4 сек)
             f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=60:"
             f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v0];"
 
-            # 2. ТАЙМЕР ОБРАТНОГО ОТСЧЕТА (сверху справа): 5:00 -> 0:00
-            f"[v0]drawtext=fontfile=font.ttf:"
-            f"text='%{{eif\\:trunc(({DURATION}-t)/60)\\:d}}%\\:%{{eif\\:mod(({DURATION}-t),60)\\:d\\:2}}':"
-            f"x=w-tw-50:y=50:fontsize=60:fontcolor=white:box=1:boxcolor=black@0.4[v1];"
+            # 2. ТАЙМЕР (сверху справа, прозрачность 0.4 как у @HexCol)
+            f"[v0]drawtext=fontfile=font.ttf:text='%{{eif\\:trunc((300-t)/60)\\:d}}\\:%{{eif\\:mod((300-t),60)\\:d\\:2}}':"
+            f"x=w-tw-50:y=50:fontsize=60:fontcolor=white@0.4[v1];"
 
             # 3. Основная плашка HEX и водянка @HexCol
             f"[v1]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v2];"
             f"[v2]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v3];"
 
-            # 4. АУТРО (295-300 сек): Плавный прояв 2 строк по центру
+            # 4. АУТРО (295-300 сек)
             f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=64:"
             f"x=(w-tw)/2:y=(h-th)/2-40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
             f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=36:"
             f"x=(w-tw)/2:y=(h-th)/2+40:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
 
-            # 5. Финальный Fade Out всего видео
+            # 5. Fade In / Fade Out
             f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
