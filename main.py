@@ -98,6 +98,14 @@ def create_video(hex_code, music, output):
     if not os.path.exists("font.ttf"):
         raise FileNotFoundError("Шрифт font.ttf не найден в репозитории!")
 
+    # Сначала считаем имя и плашку (чтобы они существовали до сборки cmd!)
+    hex_clean = hex_code.lstrip('#')
+    r_val = int(hex_clean[0:2], 16)
+    g_val = int(hex_clean[2:4], 16)
+    b_val = int(hex_clean[4:6], 16)
+    color_name = get_color_name(r_val, g_val, b_val)
+    plate_text = f"{hex_code} — {color_name}"
+
     intro_texts = [
         f"Do you like Color {hex_code}?",
         f"Would you use {hex_code} in your design?",
@@ -151,17 +159,6 @@ def create_video(hex_code, music, output):
         output
     ]
 
-        # Рассчитываем RGB для имени
-    hex_clean = hex_code.lstrip('#')
-    r_val = int(hex_clean[0:2], 16)
-    g_val = int(hex_clean[2:4], 16)
-    b_val = int(hex_clean[4:6], 16)
-    color_name = get_color_name(r_val, g_val, b_val)
-    
-    # Текст для плашки с 4 по 8 секунду
-    plate_text = f"{hex_code} - {color_name}"
-    
-
     try:
         subprocess.run(cmd, capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as e:
@@ -169,6 +166,7 @@ def create_video(hex_code, music, output):
         raise
 
     logger.info(f"Видео {output} успешно создано.")
+    
 
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
