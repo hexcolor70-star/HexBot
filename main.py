@@ -167,15 +167,16 @@ def create_video(hex_code, music, output):
 
     logger.info(f"Видео {output} успешно создано.")
     
-
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
 
-    # 1. Расчет RGB и HSL
+    # 1. Расчет RGB, HSL и уникального словесного имени цвета
     hex_clean = hex_code.lstrip('#')
     r = int(hex_clean[0:2], 16)
     g = int(hex_clean[2:4], 16)
     b = int(hex_clean[4:6], 16)
+
+    color_name = get_color_name(r, g, b)
 
     r_n, g_n, b_n = r / 255.0, g / 255.0, b / 255.0
     c_max, c_min = max(r_n, g_n, b_n), min(r_n, g_n, b_n)
@@ -183,7 +184,7 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
 
     track_title = os.path.splitext(chosen_track)[0]
 
-    # 2. Динамический пул тегов (генерируем заранее, чтобы использовать и в API, и в описании)
+    # 2. Динамический пул тегов
     base_tags = [
         hex_code, 
         f"hex {hex_code}", 
@@ -201,23 +202,22 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
     ]
     chosen_tags = random.sample(base_tags, k=8)
 
-    # Формируем строки для текста описания из выбранных тегов
     keywords_str = ", ".join(chosen_tags)
-    # Делаем хэштеги (убираем пробелы из фраз для валидности хэштегов, например #hex00ff00)
     hashtags_str = " ".join([f"#{tag.replace(' ', '')}" for tag in chosen_tags])
 
-    # 3. Описание (3 шаблона) с добавлением ключевых слов и хэштегов в конец
+    # 3. Описания
     desc_1 = f"""Color Code: {hex_code}
 This is a visual reference for the HEX color {hex_code}. 
 This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
 
 Technical Details:
 - HEX: {hex_code}
+- Color Name: {color_name}
 - RGB Values: rgb({r}, {g}, {b})
 - Luminance: {lum}%
 - Music Track: {track_title}
 - Project: Visual HEX Color Library
-- Color Name (Unique): {color_name}
+
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/
@@ -228,15 +228,14 @@ Keywords: {keywords_str}
 
     desc_2 = f"""HEX Color Display: {hex_code}
 
-Visual preview of the color shade {hex_code} (RGB: {r}, {g}, {b}).
+Visual preview of the color shade {hex_code} (RGB: {r}, {g}, {b}) - {color_name}.
 This upload is part of an archival project covering all 16,777,216 RGB colors.
 
 Specifications:
-- Color: {hex_code}
+- Color: {hex_code} ({color_name})
 - Red / Green / Blue: {r} / {g} / {b}
 - Audio Track: {track_title}
 - Archive: Visual HEX Color Library
-- Name of Color: {color_name}
 
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
@@ -246,7 +245,7 @@ Keywords: {keywords_str}
 
 {hashtags_str}"""
 
-    desc_3 = f"""Visual Reference for {hex_code}
+    desc_3 = f"""Visual Reference for {hex_code} ({color_name})
 
 Color Shade: {hex_code}
 RGB Spectrum values: rgb({r}, {g}, {b}) | Lightness: {lum}%
@@ -256,8 +255,6 @@ This video is part of a massive project to document all 16,777,216 colors in the
 Audio & Credits:
 - Track: {track_title}
 - Project: Visual HEX Color Library
-
-- Color: {color_name}
 
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
@@ -272,7 +269,7 @@ Keywords: {keywords_str}
     # 4. Сборка тела запроса
     body = {
         'snippet': {
-            'title': f"What does {hex_code} - {color_name} look like? | Color Code Preview",
+            'title': f"What does {hex_code} — {color_name} look like? | Color Code Preview",
             'description': description,
             'tags': chosen_tags
         },
@@ -290,6 +287,7 @@ Keywords: {keywords_str}
     )
     response = request.execute()
     logger.info(f"Загрузка завершена! Ссылка на видео: https://youtu.be/{response['id']}")
+    
 
 def main():
     logger.info("Запуск одноразовой итерации бота...")
