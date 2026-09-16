@@ -195,7 +195,7 @@ Keywords: {keywords_str}
     desc_2 = f"""HEX Color Display: {hex_code}
 
 Visual preview of the color shade {hex_code} (RGB: {r}, {g}, {b}).
-This upload is part of an automated archival project covering all 16,777,216 RGB colors.
+This upload is part of an archival project covering all 16,777,216 RGB colors.
 
 Specifications:
 - Color: {hex_code}
