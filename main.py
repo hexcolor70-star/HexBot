@@ -20,6 +20,23 @@ DURATION = 300  # 5 минут
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+list_intensity = ["Vivid", "Deep", "Pale", "Radiant", "Dusky", "Silken", "Velvet", "Dim", "Bright", "Gleaming", "Shadowy", "Bold", "Soft", "Rich", "Intense", "Muted", "Neon", "Electric", "Dark", "Light", "Shimmering", "Glowing", "Fading", "Dense", "Clear", "Pure", "Raw", "Subtle", "Sharp", "Smooth", "Hazy", "Vibrant", "Melancholy", "Solar", "Lunar", "Astral", "Cosmic", "Mystic", "Ethereal", "Plasma", "Aether", "Quantum", "Prismatic", "Stellar", "Nebula", "Void", "Apex", "Prime", "Ultra", "Super", "Hyper", "Mega", "Giga", "Tera", "Alpha", "Beta", "Gamma", "Delta", "Omega", "Zeta", "Sigma", "Core", "Nexus"]
+
+list_texture = ["Frosty", "Smoky", "Crystal", "Rustic", "Velvet", "Silky", "Glossy", "Matte", "Rough", "Sleek", "Liquid", "Frozen", "Molten", "Burning", "Opal", "Glassy", "Metallic", "Chrome", "Shadow", "Ghost", "Echo", "Mirage", "Prism", "Shard", "Dust", "Ash", "Silt", "Soil", "Stone", "Iron", "Steel", "Bronze", "Silver", "Gold", "Platinum", "Titanium", "Copper", "Brass", "Lead", "Carbon", "Graphite", "Obsidian", "Amber", "Coral", "Pearl", "Jade", "Ruby", "Sapphire", "Topaz", "Quartz", "Granite", "Marble", "Silk", "Satin", "Linen", "Wool", "Cotton", "Fleece", "Hide", "Scale", "Shell", "Bone", "Spore"]
+
+list_modifier = ["Azure", "Cobalt", "Indigo", "Cyan", "Teal", "Emerald", "Mint", "Jade", "Forest", "Olive", "Lime", "Yellow", "Amber", "Gold", "Orange", "Coral", "Crimson", "Ruby", "Scarlet", "Maroon", "Wine", "Berry", "Plum", "Purple", "Violet", "Amethyst", "Lavender", "Pink", "Rose", "Blush", "Peach", "Salmon", "Copper", "Rust", "Brown", "Chocolate", "Coffee", "Sand", "Beige", "Ivory", "Cream", "Snow", "White", "Silver", "Gray", "Slate", "Charcoal", "Jet", "Black", "Midnight", "Navy", "Royal", "Prussian", "Steel", "Ice", "Glacier", "Arctic", "Boreal", "Stellar", "Void", "Abyss", "Depth", "Horizon"]
+
+list_base = ["Sapphire", "Ruby", "Emerald", "Amethyst", "Topaz", "Obsidian", "Amber", "Jade", "Coral", "Pearl", "Quartz", "Granite", "Marble", "Silver", "Gold", "Platinum", "Titanium", "Copper", "Carbon", "Graphite", "Steel", "Iron", "Bronze", "Brass", "Silk", "Velvet", "Satin", "Linen", "Crystal", "Glass", "Prism", "Mirror", "Shadow", "Light", "Beam", "Ray", "Flare", "Glow", "Spark", "Flame", "Fire", "Ash", "Dust", "Smoke", "Mist", "Fog", "Haze", "Cloud", "Storm", "Rain", "Wave", "Tide", "Abyss", "Void", "Space", "Star", "Planet", "Comet", "Meteor", "Pulsar", "Quasar", "Galaxy", "Nexus", "Core"]
+
+def get_color_name(r, g, b):
+    rgb_int = (r << 16) | (g << 8) | b
+    idx1 = (rgb_int >> 18) & 0x3F
+    idx2 = (rgb_int >> 12) & 0x3F
+    idx3 = (rgb_int >> 6) & 0x3F
+    idx4 = rgb_int & 0x3F
+    return f"{list_intensity[idx1]} {list_texture[idx2]} {list_modifier[idx3]} {list_base[idx4]}"
+    
+
 
 def get_youtube_client():
     token_data = os.environ.get("G_TOKEN_JSON")
@@ -90,14 +107,22 @@ def create_video(hex_code, music, output):
     ]
     chosen_intro = random.choice(intro_texts)
 
+    # Плавное появление (с 4 по 5 сек) и затухание (с 7 по 8 сек)
+    alpha_expr = "if(lt(t,5), t-4, if(lt(t,7), 1, 8-t))"
+
     cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. ИНТРО (0-4 сек): Крупный размер шрифта (fontsize=80)
+            # 1. ИНТРО (0-4 сек)
             f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=80:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v0];"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v_intro];"
+
+            # 1.1. ПЛАШКА НАЗВАНИЯ ЦВЕТА (4-8 сек с плавным появлением и исчезновением)
+            f"[v_intro]drawtext=fontfile=font.ttf:text='{plate_text}':fontcolor=white:fontsize=50:"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,4,8)':alpha='{alpha_expr}':"
+            f"box=1:boxcolor=black@0.6:boxborderw=20[v0];"
 
             # 2. ТАЙМЕР (сверху справа, прозрачность 0.4)
             f"[v0]drawtext=fontfile=font.ttf:text='%{{eif\\:trunc((300-t)/60)\\:d}}\\:%{{eif\\:mod((300-t),60)\\:d\\:2}}':"
@@ -107,14 +132,14 @@ def create_video(hex_code, music, output):
             f"[v1]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v2];"
             f"[v2]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v3];"
 
-            # 4. АУТРО (295-300 сек): Увеличенные шрифты (fontsize=85 и fontsize=48)
+            # 4. АУТРО (295-300 сек)
             f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=85:"
             f"x=(w-tw)/2:y=(h-th)/2-60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
             f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=48:"
             f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
 
-            # 5. Fade In / Fade Out
+            # 5. Fade In / Fade Out всего видео
             f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
@@ -125,6 +150,17 @@ def create_video(hex_code, music, output):
         '-t', str(DURATION), 
         output
     ]
+
+        # Рассчитываем RGB для имени
+    hex_clean = hex_code.lstrip('#')
+    r_val = int(hex_clean[0:2], 16)
+    g_val = int(hex_clean[2:4], 16)
+    b_val = int(hex_clean[4:6], 16)
+    color_name = get_color_name(r_val, g_val, b_val)
+    
+    # Текст для плашки с 4 по 8 секунду
+    plate_text = f"{hex_code} - {color_name}"
+    
 
     try:
         subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -183,7 +219,7 @@ Technical Details:
 - Luminance: {lum}%
 - Music Track: {track_title}
 - Project: Visual HEX Color Library
-
+- Color Name (Unique): {color_name}
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/
@@ -202,6 +238,7 @@ Specifications:
 - Red / Green / Blue: {r} / {g} / {b}
 - Audio Track: {track_title}
 - Archive: Visual HEX Color Library
+- Name of Color: {color_name}
 
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
@@ -222,6 +259,8 @@ Audio & Credits:
 - Track: {track_title}
 - Project: Visual HEX Color Library
 
+- Color: {color_name}
+
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/
@@ -235,7 +274,7 @@ Keywords: {keywords_str}
     # 4. Сборка тела запроса
     body = {
         'snippet': {
-            'title': f"What does {hex_code} look like? | Color Code Preview",
+            'title': f"What does {hex_code} - {color_name} look like? | Color Code Preview",
             'description': description,
             'tags': chosen_tags
         },
