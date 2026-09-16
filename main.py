@@ -187,7 +187,8 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
     # 2. Динамический пул тегов
     base_tags = [
         hex_code, 
-        f"hex {hex_code}", 
+        f"hex {hex_code}",
+        f"color {color_name}",
         f"rgb {r} {g} {b}", 
         "hex color", 
         "rgb spectrum", 
