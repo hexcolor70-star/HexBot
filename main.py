@@ -13,7 +13,14 @@ MUSIC_TRACKS = [
     "Alternate - Vibe Tracks.aac", 
     "Cipher - Kevin MacLeod.aac", 
     "Nebula - The Grey Room.aac", 
-    "Butterfly - Patrick Patrikios.aac"
+    "Butterfly - Patrick Patrikios.aac",
+    "Meditation Impromptu 01 - Kevin MacLeod.aac",
+    "Meditation Impromptu 02 - Kevin MacLeod.aac",
+    "Meditation Impromptu 03 - Kevin MacLeod.aac",
+    "Sydney's Skyline - ALBIS.aac",
+    "Clover 3 - Kevin MacLeod.aac",
+    "Radio Flyer - Nathan Moore.aac",
+    "The Palace Gardens - Asher Fulero"
 ]
 DURATION = 300  # 5 минут
 
