@@ -127,7 +127,8 @@ def create_video(hex_code, music, output):
     # Плавное появление (с 4 по 5 сек) и затухание (с 7 по 8 сек)
     alpha_expr = "if(lt(t,5), t-4, if(lt(t,7), 1, 8-t))"
 
-cmd = [
+    # ВСЁ ЧТО НИЖЕ ТЕПЕРЬ СДВИНУТО ВПЕРЕД НА 4 ПРОБЕЛА (внутрь функции):
+    cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
@@ -168,13 +169,14 @@ cmd = [
         '-t', str(DURATION), 
         output
     ]
-try:
-    subprocess.run(cmd, capture_output=True, text=True, check=True)
-except subprocess.CalledProcessError as e:
-    logger.error(f"ОШИБКА FFMPEG:\n{e.stderr}")
-    raise
+    
+    try:
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"ОШИБКА FFMPEG:\n{e.stderr}")
+        raise
 
-logger.info(f"Видео {output} успешно создано.")
+    logger.info(f"Видео {output} успешно создано.")
 
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
