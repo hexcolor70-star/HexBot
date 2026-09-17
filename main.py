@@ -182,9 +182,9 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
     
     hex_clean = hex_code.lstrip('#')
-    r_val = int(hex_clean[0:2], 16)
-    g_val = int(hex_clean[2:4], 16)
-    b_val = int(hex_clean[4:6], 16)
+    r = int(hex_clean[0:2], 16)
+    g = int(hex_clean[2:4], 16)
+    b = int(hex_clean[4:6], 16)
     color_name = get_color_name(r_val, g_val, b_val)
 
     # Дальше идет твой старый код загрузки с описанием, где теперь есть color_name...
