@@ -127,7 +127,7 @@ def create_video(hex_code, music, output):
     # Плавное появление (с 4 по 5 сек) и затухание (с 7 по 8 сек)
     alpha_expr = "if(lt(t,5), t-4, if(lt(t,7), 1, 8-t))"
 
-    cmd = [
+cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
@@ -149,14 +149,15 @@ def create_video(hex_code, music, output):
             f"[v1]drawtext=fontfile=font.ttf:text='{hex_code}':x=50:y=h-th-50:fontsize=75:fontcolor=white:box=1:boxcolor=black@0.5[v2];"
             f"[v2]drawtext=fontfile=font.ttf:text='@HexCol':x=w-tw-50:y=h-th-50:fontsize=75:fontcolor=white@0.4[v3];"
 
-            # 4. АУТРО (295-300 сек)
+            # 4. АУТРО (295-300 сек) - Часть 1
             f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=85:"
             f"x=(w-tw)/2:y=(h-th)/2-60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
+            # 4.1. АУТРО (295-300 сек) - Часть 2 (с закрывающей меткой [v4])
             f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=48:"
-            f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)';"
+            f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
 
-            # 5. Fade In / Fade Out всего видео
+            # 5. Fade In / Fade Out всего видео (берет готовый [v4])
             f"[v4]fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
@@ -167,7 +168,6 @@ def create_video(hex_code, music, output):
         '-t', str(DURATION), 
         output
     ]
-
     try:
         subprocess.run(cmd, capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as e:
