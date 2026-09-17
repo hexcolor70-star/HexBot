@@ -18,7 +18,7 @@ MUSIC_TRACKS = [
     "Meditation Impromptu 02 - Kevin MacLeod.aac",
     "Meditation Impromptu 03 - Kevin MacLeod.aac",
     "Sydney's Skyline - ALBIS.aac",
-    "Clover 3 - Kevin MacLeod.aac",
+    "Clover 3 - Vibe Mountain.aac",
     "Radio Flyer - Nathan Moore.aac",
     "The Palace Gardens - Asher Fulero.aac"
 ]
