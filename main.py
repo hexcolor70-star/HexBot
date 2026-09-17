@@ -157,7 +157,7 @@ def create_video(hex_code, music, output):
             f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)';"
 
             # 5. Fade In / Fade Out всего видео
-            f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
+            f"[v4]fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
         '-map', '1:a',
