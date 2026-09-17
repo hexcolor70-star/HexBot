@@ -20,7 +20,7 @@ MUSIC_TRACKS = [
     "Sydney's Skyline - ALBIS.aac",
     "Clover 3 - Kevin MacLeod.aac",
     "Radio Flyer - Nathan Moore.aac",
-    "The Palace Gardens - Asher Fulero"
+    "The Palace Gardens - Asher Fulero.aac"
 ]
 DURATION = 300  # 5 минут
 
@@ -185,7 +185,7 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
     r = int(hex_clean[0:2], 16)
     g = int(hex_clean[2:4], 16)
     b = int(hex_clean[4:6], 16)
-    color_name = get_color_name(r_val, g_val, b_val)
+    color_name = get_color_name(r, g, b)
 
     # Дальше идет твой старый код загрузки с описанием, где теперь есть color_name...
 
