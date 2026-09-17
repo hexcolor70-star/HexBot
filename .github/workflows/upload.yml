@@ -20,7 +20,7 @@ jobs:
       - name: Set up Local FFmpeg
         run: |
           chmod +x bin/ffmpeg
-          echo "$PWD/bin" >> $GITHUB_ENV
+          echo "$PWD/bin" >> $GITHUB_PATH
 
       # 3. Настройка Python
       - name: Set up Python
