@@ -154,7 +154,7 @@ def create_video(hex_code, music, output):
             f"x=(w-tw)/2:y=(h-th)/2-60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
             f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=48:"
-            f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)',"
+            f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)';"
 
             # 5. Fade In / Fade Out всего видео
             f"fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
