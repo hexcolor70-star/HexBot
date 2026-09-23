@@ -112,41 +112,65 @@ def create_video(hex_code, music, output):
     b_val = int(hex_clean[4:6], 16)
     color_name = get_color_name(r_val, g_val, b_val)
     
-    # 1. Обязательный блок (название цвета с плашкой)
+    # 1. Жесткий 2-й слот (4-8 сек) — всегда название цвета с плашкой
     mandatory_block = {
         "text": f"{hex_code} - {color_name}", 
         "box": True, 
         "fontsize": 60
     }
     
-    # 2. Пул только для вопросов и призывов (10 штук, без дублирования названия цвета)
+    # 2. Пул из 10 вопросов для первого варианта
     questions_pool = [
         {"text": f"Do you like Color {hex_code}?", "box": False, "fontsize": 80},
         {"text": f"Would you use {hex_code} in your design?", "box": False, "fontsize": 80},
         {"text": f"How does {hex_code} make you feel?", "box": False, "fontsize": 80},
-        {"text": "Subscribe and like!", "box": False, "fontsize": 80},
         {"text": f"Is {hex_code} your style?", "box": False, "fontsize": 80},
         {"text": f"What do you think of {hex_code}?", "box": False, "fontsize": 80},
         {"text": f"Can you imagine {hex_code} on your wall?", "box": False, "fontsize": 75},
         {"text": f"Does {hex_code} look bright to you?", "box": False, "fontsize": 80},
         {"text": f"Rate this color {hex_code} from 1 to 10!", "box": False, "fontsize": 80},
-        {"text": f"Would this shade fit a modern room?", "box": False, "fontsize": 75}
+        {"text": f"Would this shade fit a modern room?", "box": False, "fontsize": 75},
+        {"text": f"Have you ever seen a color like {hex_code}?", "box": False, "fontsize": 75}
     ]
-    
-    # Выбираем 2 уникальных случайных вопроса
-    chosen_questions = random.sample(questions_pool, k=2)
-    
-    # Собираем вместе обязательный блок и 2 вопроса, а затем перемешиваем их порядок!
-    chosen_blocks = [mandatory_block, chosen_questions[0], chosen_questions[1]]
-    random.shuffle(chosen_blocks)
+    random_question = random.choice(questions_pool)
 
-    # Динамически собираем фильтры для первых 12 секунд (по 4 секунды на слот)
+    # 3. Блок сравнения цвета
+    comparison_block = {
+        "text": f"Is {hex_code} closer to light or dark?", 
+        "box": False, 
+        "fontsize": 75
+    }
+
+    # 4. Блок подписки
+    subscribe_block = {
+        "text": "Subscribe and like this video!", 
+        "box": False, 
+        "fontsize": 80
+    }
+
+    # Собираем общую тройку элементов, из которой случайно берем 2 разных для 1-го и 3-го слотов
+    three_extras = [random_question, comparison_block, subscribe_block]
+    chosen_extras = random.sample(three_extras, k=2)
+
+    # Итоговый порядок: [Слот 1 (0-4с), Слот 2 (4-8с — цвет), Слот 3 (8-12с)]
+    chosen_blocks = [
+        chosen_extras[0],
+        mandatory_block,
+        chosen_extras[1]
+    ]
+
+    # ЛОГИРУЕМ ПОРЯДОК для проверки в консоли
+    block_texts = [b['text'] for b in chosen_blocks]
+    logger.info(f"Порядок слотов (0-4с, 4-8с [ЦВЕТ], 8-12с): {block_texts}")
+
+    # Динамически собираем фильтры для 3 слотов по 4 секунды
     intro_filters = []
     prev_label = "0:v"
     
     for i, block in enumerate(chosen_blocks):
         start = i * 4
         end = start + 4
+        # 3-й слот (индекс 2) передает метку [v_intro] для таймера
         next_label = f"v_slot{i+1}" if i < 2 else "v_intro"
         
         box_args = ":box=1:boxcolor=black@0.6:boxborderw=20" if block["box"] else ""
@@ -165,7 +189,7 @@ def create_video(hex_code, music, output):
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. Рандомизированное интро (обязательный блок цвета + 2 случайных вопроса вперемешку)
+            # 1. Интро по слотам (рандом -> жесткий цвет -> рандом)
             f"{intro_chain};"
 
             # 2. ТАЙМЕР (сверху справа, прозрачность 0.4)
@@ -203,6 +227,8 @@ def create_video(hex_code, music, output):
         raise
 
     logger.info(f"Видео {output} успешно создано.")
+    
+    
     
     
 
