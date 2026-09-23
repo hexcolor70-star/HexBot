@@ -105,45 +105,56 @@ def create_video(hex_code, music, output):
     if not os.path.exists("font.ttf"):
         raise FileNotFoundError("Шрифт font.ttf не найден в репозитории!")
 
-    # Сначала считаем RGB и название цвета, чтобы plate_text уже существовала!
+    # Считаем RGB и название цвета
     hex_clean = hex_code.lstrip('#')
     r_val = int(hex_clean[0:2], 16)
     g_val = int(hex_clean[2:4], 16)
     b_val = int(hex_clean[4:6], 16)
     color_name = get_color_name(r_val, g_val, b_val)
     
-    # Текст для плашки с 4 по 8 секунду
-    plate_text = f"{hex_code} - {color_name}"
-
-    intro_texts = [
+    # Пул из 10 вопросов для интро (рандомизируются для 1-го и 3-го слотов)
+    intro_pool = [
         f"Do you like Color {hex_code}?",
         f"Would you use {hex_code} in your design?",
         f"How does {hex_code} make you feel?",
         f"Is {hex_code} your style?",
-        f"What do you think of {hex_code}?"
+        f"What do you think of {hex_code}?",
+        f"Can you imagine {hex_code} on your wall?",
+        f"Does {hex_code} look bright to you?",
+        f"Would this shade of {hex_code} fit a modern room?",
+        f"Is {hex_code} a calm or energetic color?",
+        f"Rate this color {hex_code} from 1 to 10!"  # 10-й вопрос, придуманный специально для разнообразия
     ]
-    chosen_intro = random.choice(intro_texts)
+    
+    # Выбираем 2 уникальных вопроса для 1-го (0-4с) и 3-го (8-12с) слотов
+    chosen_intro_1, chosen_intro_3 = random.sample(intro_pool, k=2)
 
-    # Плавное появление (с 4 по 5 сек) и затухание (с 7 по 8 сек)
+    # Обязательный блок (название цвета) всегда стоит в середине (4-8 сек)
+    mandatory_block = f"{hex_code} - {color_name}"
+
+    # Плавное появление (с 4 по 5 сек) и затухание (с 7 по 8 сек) для основной плашки
     alpha_expr = "if(lt(t,5), t-4, if(lt(t,7), 1, 8-t))"
 
-    # ВСЁ ЧТО НИЖЕ ТЕПЕРЬ СДВИНУТО ВПЕРЕД НА 4 ПРОБЕЛА (внутрь функции):
     cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. ИНТРО (0-4 сек)
-            f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro}':fontcolor=white:fontsize=80:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v_intro];"
+            # 1. ИНТРО - Слот 1 (0-4 сек) с плавным появлением/затуханием через синус
+            f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro_1}':fontcolor=white:fontsize=80:"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v_slot1];"
 
-            # 1.1. ПЛАШКА НАЗВАНИЯ ЦВЕТА (4-8 сек с плавным появлением и исчезновением)
-            f"[v_intro]drawtext=fontfile=font.ttf:text='{plate_text}':fontcolor=white:fontsize=50:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,4,8)':alpha='{alpha_expr}':"
-            f"box=1:boxcolor=black@0.6:boxborderw=20[v0];"
+            # 1.1. ИНТРО - Слот 2 / Обязательный (4-8 сек) - Название цвета
+            f"[v_slot1]drawtext=fontfile=font.ttf:text='{mandatory_block}':fontcolor=white:fontsize=60:"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,4,8)':alpha='sin((t-4)/4*PI)':"
+            f"box=1:boxcolor=black@0.6:boxborderw=20[v_slot2];"
+
+            # 1.2. ИНТРО - Слот 3 (8-12 сек) с рандомным вопросом
+            f"[v_slot2]drawtext=fontfile=font.ttf:text='{chosen_intro_3}':fontcolor=white:fontsize=80:"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,8,12)':alpha='sin((t-8)/4*PI)'[v_intro];"
 
             # 2. ТАЙМЕР (сверху справа, прозрачность 0.4)
-            f"[v0]drawtext=fontfile=font.ttf:text='%{{eif\\:trunc((300-t)/60)\\:d}}\\:%{{eif\\:mod((300-t),60)\\:d\\:2}}':"
+            f"[v_intro]drawtext=fontfile=font.ttf:text='%{{eif\\:trunc((300-t)/60)\\:d}}\\:%{{eif\\:mod((300-t),60)\\:d\\:2}}':"
             f"x=w-tw-50:y=50:fontsize=60:fontcolor=white@0.4[v1];"
 
             # 3. Основная плашка HEX и водянка @HexCol
@@ -154,11 +165,11 @@ def create_video(hex_code, music, output):
             f"[v3]drawtext=fontfile=font.ttf:text='Thanks for Watching!':fontcolor=white:fontsize=85:"
             f"x=(w-tw)/2:y=(h-th)/2-60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
             
-            # 4.1. АУТРО (295-300 сек) - Часть 2 (с закрывающей меткой [v4])
+            # 4.1. АУТРО (295-300 сек) - Часть 2
             f"[v4]drawtext=fontfile=font.ttf:text='What do you think of this color\\? Let us know in the comments!':fontcolor=white@0.9:fontsize=48:"
             f"x=(w-tw)/2:y=(h-th)/2+60:enable='gte(t,295)':alpha='if(lt(t,296),t-295,1)'[v4];"
 
-            # 5. Fade In / Fade Out всего видео (берет готовый [v4])
+            # 5. Fade In / Fade Out всего видео
             f"[v4]fade=t=in:st=0:d=1,fade=t=out:st={DURATION-1}:d=1[v]"
         ),
         '-map', '[v]', 
@@ -177,6 +188,7 @@ def create_video(hex_code, music, output):
         raise
 
     logger.info(f"Видео {output} успешно создано.")
+    
 
 def upload_video(youtube, video_file, hex_code, chosen_track):
     logger.info("Подготовка к загрузке на YouTube...")
