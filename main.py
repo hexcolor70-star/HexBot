@@ -112,46 +112,61 @@ def create_video(hex_code, music, output):
     b_val = int(hex_clean[4:6], 16)
     color_name = get_color_name(r_val, g_val, b_val)
     
-    # Пул из 10 вопросов для интро (рандомизируются для 1-го и 3-го слотов)
-    intro_pool = [
-        f"Do you like Color {hex_code}?",
-        f"Would you use {hex_code} in your design?",
-        f"How does {hex_code} make you feel?",
-        f"Is {hex_code} your style?",
-        f"What do you think of {hex_code}?",
-        f"Can you imagine {hex_code} on your wall?",
-        f"Does {hex_code} look bright to you?",
-        f"Would this shade of {hex_code} fit a modern room?",
-        f"Is {hex_code} a calm or energetic color?",
-        f"Rate this color {hex_code} from 1 to 10!"  # 10-й вопрос, придуманный специально для разнообразия
+    # 1. Обязательный блок (название цвета с плашкой)
+    mandatory_block = {
+        "text": f"{hex_code} - {color_name}", 
+        "box": True, 
+        "fontsize": 60
+    }
+    
+    # 2. Пул только для вопросов и призывов (10 штук, без дублирования названия цвета)
+    questions_pool = [
+        {"text": f"Do you like Color {hex_code}?", "box": False, "fontsize": 80},
+        {"text": f"Would you use {hex_code} in your design?", "box": False, "fontsize": 80},
+        {"text": f"How does {hex_code} make you feel?", "box": False, "fontsize": 80},
+        {"text": "Subscribe and like!", "box": False, "fontsize": 80},
+        {"text": f"Is {hex_code} your style?", "box": False, "fontsize": 80},
+        {"text": f"What do you think of {hex_code}?", "box": False, "fontsize": 80},
+        {"text": f"Can you imagine {hex_code} on your wall?", "box": False, "fontsize": 75},
+        {"text": f"Does {hex_code} look bright to you?", "box": False, "fontsize": 80},
+        {"text": f"Rate this color {hex_code} from 1 to 10!", "box": False, "fontsize": 80},
+        {"text": f"Would this shade fit a modern room?", "box": False, "fontsize": 75}
     ]
     
-    # Выбираем 2 уникальных вопроса для 1-го (0-4с) и 3-го (8-12с) слотов
-    chosen_intro_1, chosen_intro_3 = random.sample(intro_pool, k=2)
+    # Выбираем 2 уникальных случайных вопроса
+    chosen_questions = random.sample(questions_pool, k=2)
+    
+    # Собираем вместе обязательный блок и 2 вопроса, а затем перемешиваем их порядок!
+    chosen_blocks = [mandatory_block, chosen_questions[0], chosen_questions[1]]
+    random.shuffle(chosen_blocks)
 
-    # Обязательный блок (название цвета) всегда стоит в середине (4-8 сек)
-    mandatory_block = f"{hex_code} - {color_name}"
+    # Динамически собираем фильтры для первых 12 секунд (по 4 секунды на слот)
+    intro_filters = []
+    prev_label = "0:v"
+    
+    for i, block in enumerate(chosen_blocks):
+        start = i * 4
+        end = start + 4
+        next_label = f"v_slot{i+1}" if i < 2 else "v_intro"
+        
+        box_args = ":box=1:boxcolor=black@0.6:boxborderw=20" if block["box"] else ""
+        alpha_func = "sin(t/4*PI)" if start == 0 else f"sin((t-{start})/4*PI)"
+        
+        intro_filters.append(
+            f"[{prev_label}]drawtext=fontfile=font.ttf:text='{block['text']}':fontcolor=white:fontsize={block['fontsize']}:"
+            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,{start},{end})':alpha='{alpha_func}'{box_args}[{next_label}]"
+        )
+        prev_label = next_label
 
-    # Плавное появление (с 4 по 5 сек) и затухание (с 7 по 8 сек) для основной плашки
-    alpha_expr = "if(lt(t,5), t-4, if(lt(t,7), 1, 8-t))"
+    intro_chain = ";".join(intro_filters)
 
     cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. ИНТРО - Слот 1 (0-4 сек) с плавным появлением/затуханием через синус
-            f"[0:v]drawtext=fontfile=font.ttf:text='{chosen_intro_1}':fontcolor=white:fontsize=80:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,0,4)':alpha='sin(t/4*PI)'[v_slot1];"
-
-            # 1.1. ИНТРО - Слот 2 / Обязательный (4-8 сек) - Название цвета
-            f"[v_slot1]drawtext=fontfile=font.ttf:text='{mandatory_block}':fontcolor=white:fontsize=60:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,4,8)':alpha='sin((t-4)/4*PI)':"
-            f"box=1:boxcolor=black@0.6:boxborderw=20[v_slot2];"
-
-            # 1.2. ИНТРО - Слот 3 (8-12 сек) с рандомным вопросом
-            f"[v_slot2]drawtext=fontfile=font.ttf:text='{chosen_intro_3}':fontcolor=white:fontsize=80:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,8,12)':alpha='sin((t-8)/4*PI)'[v_intro];"
+            # 1. Рандомизированное интро (обязательный блок цвета + 2 случайных вопроса вперемешку)
+            f"{intro_chain};"
 
             # 2. ТАЙМЕР (сверху справа, прозрачность 0.4)
             f"[v_intro]drawtext=fontfile=font.ttf:text='%{{eif\\:trunc((300-t)/60)\\:d}}\\:%{{eif\\:mod((300-t),60)\\:d\\:2}}':"
@@ -188,6 +203,7 @@ def create_video(hex_code, music, output):
         raise
 
     logger.info(f"Видео {output} успешно создано.")
+    
     
 
 def upload_video(youtube, video_file, hex_code, chosen_track):
