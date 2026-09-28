@@ -112,40 +112,47 @@ def create_video(hex_code, music, output):
     b_val = int(hex_clean[4:6], 16)
     color_name = get_color_name(r_val, g_val, b_val)
     
+    # Вычисляем цвет для сравнения (+50 шагов вперед, слева текущий, справа +50)
+    comparison_index = min(current_index + 50, 16777215)
+    comparison_hex = f"#{comparison_index:06X}"
+
     # 1. Жесткий 2-й слот (4-8 сек) — всегда название цвета с плашкой
     mandatory_block = {
         "text": f"{hex_code} - {color_name}", 
         "box": True, 
-        "fontsize": 60
+        "fontsize": 60,
+        "is_table": False
     }
     
     # 2. Пул из 10 вопросов для первого варианта
     questions_pool = [
-        {"text": f"Do you like Color {hex_code}?", "box": False, "fontsize": 80},
-        {"text": f"Would you use {hex_code} in your design?", "box": False, "fontsize": 80},
-        {"text": f"How does {hex_code} make you feel?", "box": False, "fontsize": 80},
-        {"text": f"Is {hex_code} your style?", "box": False, "fontsize": 80},
-        {"text": f"What do you think of {hex_code}?", "box": False, "fontsize": 80},
-        {"text": f"Can you imagine {hex_code} on your wall?", "box": False, "fontsize": 75},
-        {"text": f"Does {hex_code} look bright to you?", "box": False, "fontsize": 80},
-        {"text": f"Rate this color {hex_code} from 1 to 10!", "box": False, "fontsize": 80},
-        {"text": f"Would this shade fit a modern room?", "box": False, "fontsize": 75},
-        {"text": f"Have you ever seen a color like {hex_code}?", "box": False, "fontsize": 75}
+        {"text": f"Do you like Color {hex_code}?", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"Would you use {hex_code} in your design?", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"How does {hex_code} make you feel?", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"Is {hex_code} your style?", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"What do you think of {hex_code}?", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"Can you imagine {hex_code} on your wall?", "box": False, "fontsize": 75, "is_table": False},
+        {"text": f"Does {hex_code} look bright to you?", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"Rate this color {hex_code} from 1 to 10!", "box": False, "fontsize": 80, "is_table": False},
+        {"text": f"Would this shade fit a modern room?", "box": False, "fontsize": 75, "is_table": False},
+        {"text": f"Have you ever seen a color like {hex_code}?", "box": False, "fontsize": 75, "is_table": False}
     ]
     random_question = random.choice(questions_pool)
 
-    # 3. Блок сравнения цвета
+    # 3. Блок сравнения цвета (Таблица: слева текущий, справа +50)
     comparison_block = {
-        "text": f"Is {hex_code} closer to light or dark?", 
-        "box": False, 
-        "fontsize": 75
+        "is_table": True,
+        "left_color": hex_code,
+        "right_color": comparison_hex,
+        "fontsize": 60
     }
 
     # 4. Блок подписки
     subscribe_block = {
         "text": "Subscribe and like this video!", 
         "box": False, 
-        "fontsize": 80
+        "fontsize": 80,
+        "is_table": False
     }
 
     # Собираем общую тройку элементов, из которой случайно берем 2 разных для 1-го и 3-го слотов
@@ -160,7 +167,7 @@ def create_video(hex_code, music, output):
     ]
 
     # ЛОГИРУЕМ ПОРЯДОК для проверки в консоли
-    block_texts = [b['text'] for b in chosen_blocks]
+    block_texts = [b.get('text', 'COMPARISON_TABLE') for b in chosen_blocks]
     logger.info(f"Порядок слотов (0-4с, 4-8с [ЦВЕТ], 8-12с): {block_texts}")
 
     # Динамически собираем фильтры для 3 слотов по 4 секунды
@@ -170,19 +177,38 @@ def create_video(hex_code, music, output):
     for i, block in enumerate(chosen_blocks):
         start = i * 4
         end = start + 4
-        # 3-й слот (индекс 2) передает метку [v_intro] для таймера
         next_label = f"v_slot{i+1}" if i < 2 else "v_intro"
-        
-        box_args = ":box=1:boxcolor=black@0.6:boxborderw=20" if block["box"] else ""
         alpha_func = "sin(t/4*PI)" if start == 0 else f"sin((t-{start})/4*PI)"
         
-        intro_filters.append(
-            f"[{prev_label}]drawtext=fontfile=font.ttf:text='{block['text']}':fontcolor=white:fontsize={block['fontsize']}:"
-            f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,{start},{end})':alpha='{alpha_func}'{box_args}[{next_label}]"
-        )
+        if block.get("is_table"):
+            # Отрисовка таблички сравнения через FFmpeg (drawbox + drawtext)
+            intro_filters.append(
+                # Черная подложка-рамка по центру
+                f"[{prev_label}]drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=black@0.85:t=fill:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                f"drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=white@0.3:t=4:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                # Заголовок таблицы
+                f"drawtext=fontfile=font.ttf:text='Color Comparison':fontcolor=white:fontsize={block['fontsize']}:"
+                f"x=(w-tw)/2:y=(h-450)/2+30:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                # Левый квадрат (текущий цвет)
+                f"drawbox=x=(w-900)/2+80:y=(h-450)/2+120:w=330:h=200:color={block['left_color']}:t=fill:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                f"drawtext=fontfile=font.ttf:text='{block['left_color']}':fontcolor=white:fontsize=35:"
+                f"x=(w-900)/2+80+(330-tw)/2:y=(h-450)/2+335:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                # Правый квадрат (цвет +50)
+                f"drawbox=x=(w-900)/2+490:y=(h-450)/2+120:w=330:h=200:color={block['right_color']}:t=fill:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                f"drawtext=fontfile=font.ttf:text='{block['right_color']}':fontcolor=white:fontsize=35:"
+                f"x=(w-900)/2+490+(330-tw)/2:y=(h-450)/2+335:enable='between(t,{start},{end})':alpha='{alpha_func}'[{next_label}]"
+            )
+        else:
+            # Стандартный текстовый блок
+            box_args = ":box=1:boxcolor=black@0.6:boxborderw=20" if block["box"] else ""
+            intro_filters.append(
+                f"[{prev_label}]drawtext=fontfile=font.ttf:text='{block['text']}':fontcolor=white:fontsize={block['fontsize']}:"
+                f"x=(w-tw)/2:y=(h-th)/2:enable='between(t,{start},{end})':alpha='{alpha_func}'{box_args}[{next_label}]"
+            )
         prev_label = next_label
 
     intro_chain = ";".join(intro_filters)
+    
 
     cmd = [
         'ffmpeg', '-y', 
