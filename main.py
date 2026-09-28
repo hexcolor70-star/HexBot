@@ -182,23 +182,27 @@ def create_video(hex_code, music, output):
         alpha_func = "sin(t/4*PI)" if start == 0 else f"sin((t-{start})/4*PI)"
         
         if block.get("is_table"):
-            # Отрисовка таблички сравнения через FFmpeg (без прямого alpha у drawbox)
+            # Фиксированные координаты центра для плашки 900x450 на холсте 1920x1080: x = 510, y = 315
+            box_x = 510
+            box_y = 315
+            
             intro_filters.append(
-                # Черная подложка-рамка по центру (прозрачность задана через @0.85 прямо в цвете)
-                f"[{prev_label}]drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=black@0.85:t=fill:enable='between(t,{start},{end})',"
-                f"drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=white@0.3:t=4:enable='between(t,{start},{end})',"
-                # Заголовок таблицы (с поддержкой alpha для текста)
+                # 1. Черная подложка-рамка по центру
+                f"[{prev_label}]drawbox=x={box_x}:y={box_y}:w=900:h=450:color=black@0.85:t=fill:enable='between(t,{start},{end})',"
+                f"drawbox=x={box_x}:y={box_y}:w=900:h=450:color=white@0.3:t=4:enable='between(t,{start},{end})',"
+                # 2. Заголовок таблицы
                 f"drawtext=fontfile=font.ttf:text='Color Comparison':fontcolor=white:fontsize={block['fontsize']}:"
-                f"x=(w-tw)/2:y=(h-450)/2+30:enable='between(t,{start},{end})':alpha='{alpha_func}',"
-                # Левый квадрат (текущий цвет)
-                f"drawbox=x=(w-900)/2+80:y=(h-450)/2+120:w=330:h=200:color={block['left_color']}:t=fill:enable='between(t,{start},{end})',"
+                f"x={box_x}+(900-tw)/2:y={box_y}+35:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                # 3. Левый квадрат (текущий цвет)
+                f"drawbox=x={box_x}+80:y={box_y}+120:w=330:h=200:color={block['left_color']}:t=fill:enable='between(t,{start},{end})',"
                 f"drawtext=fontfile=font.ttf:text='{block['left_color']}':fontcolor=white:fontsize=35:"
-                f"x=(w-900)/2+80+(330-tw)/2:y=(h-450)/2+335:enable='between(t,{start},{end})':alpha='{alpha_func}',"
-                # Правый квадрат (цвет +50)
-                f"drawbox=x=(w-900)/2+490:y=(h-450)/2+120:w=330:h=200:color={block['right_color']}:t=fill:enable='between(t,{start},{end})',"
+                f"x={box_x}+80+(330-tw)/2:y={box_y}+335:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                # 4. Правый квадрат (цвет +50)
+                f"drawbox=x={box_x}+490:y={box_y}+120:w=330:h=200:color={block['right_color']}:t=fill:enable='between(t,{start},{end})',"
                 f"drawtext=fontfile=font.ttf:text='{block['right_color']}':fontcolor=white:fontsize=35:"
-                f"x=(w-900)/2+490+(330-tw)/2:y=(h-450)/2+335:enable='between(t,{start},{end})':alpha='{alpha_func}'[{next_label}]"
+                f"x={box_x}+490+(330-tw)/2:y={box_y}+335:enable='between(t,{start},{end})':alpha='{alpha_func}'[{next_label}]"
             )
+            
         else:
             # Стандартный текстовый блок
             box_args = ":box=1:boxcolor=black@0.6:boxborderw=20" if block["box"] else ""
