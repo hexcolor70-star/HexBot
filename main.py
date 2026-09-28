@@ -170,17 +170,7 @@ def create_video(hex_code, music, output):
     block_texts = [b.get('text', 'COMPARISON_TABLE') for b in chosen_blocks]
     logger.info(f"Порядок слотов (0-4с, 4-8с [ЦВЕТ], 8-12с): {block_texts}")
 
-    # Динамически собираем фильтры для 3 слотов по 4 секунды
-    intro_filters = []
-    prev_label = "0:v"
-    
-    for i, block in enumerate(chosen_blocks):
-        start = i * 4
-        end = start + 4
-        next_label = f"v_slot{i+1}" if i < 2 else "v_intro"
-        alpha_func = "sin(t/4*PI)" if start == 0 else f"sin((t-{start})/4*PI)"
-        
-        if block.get("is_table"):
+
     # Динамически собираем фильтры для 3 слотов по 4 секунды
     intro_filters = []
     prev_label = "0:v"
