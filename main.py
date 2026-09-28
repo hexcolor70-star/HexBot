@@ -181,20 +181,31 @@ def create_video(hex_code, music, output):
         alpha_func = "sin(t/4*PI)" if start == 0 else f"sin((t-{start})/4*PI)"
         
         if block.get("is_table"):
-            # Отрисовка таблички сравнения через FFmpeg (drawbox + drawtext)
+    # Динамически собираем фильтры для 3 слотов по 4 секунды
+    intro_filters = []
+    prev_label = "0:v"
+    
+    for i, block in enumerate(chosen_blocks):
+        start = i * 4
+        end = start + 4
+        next_label = f"v_slot{i+1}" if i < 2 else "v_intro"
+        alpha_func = "sin(t/4*PI)" if start == 0 else f"sin((t-{start})/4*PI)"
+        
+        if block.get("is_table"):
+            # Отрисовка таблички сравнения через FFmpeg (без прямого alpha у drawbox)
             intro_filters.append(
-                # Черная подложка-рамка по центру
-                f"[{prev_label}]drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=black@0.85:t=fill:enable='between(t,{start},{end})':alpha='{alpha_func}',"
-                f"drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=white@0.3:t=4:enable='between(t,{start},{end})':alpha='{alpha_func}',"
-                # Заголовок таблицы
+                # Черная подложка-рамка по центру (прозрачность задана через @0.85 прямо в цвете)
+                f"[{prev_label}]drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=black@0.85:t=fill:enable='between(t,{start},{end})',"
+                f"drawbox=x=(w-900)/2:y=(h-450)/2:w=900:h=450:color=white@0.3:t=4:enable='between(t,{start},{end})',"
+                # Заголовок таблицы (с поддержкой alpha для текста)
                 f"drawtext=fontfile=font.ttf:text='Color Comparison':fontcolor=white:fontsize={block['fontsize']}:"
                 f"x=(w-tw)/2:y=(h-450)/2+30:enable='between(t,{start},{end})':alpha='{alpha_func}',"
                 # Левый квадрат (текущий цвет)
-                f"drawbox=x=(w-900)/2+80:y=(h-450)/2+120:w=330:h=200:color={block['left_color']}:t=fill:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                f"drawbox=x=(w-900)/2+80:y=(h-450)/2+120:w=330:h=200:color={block['left_color']}:t=fill:enable='between(t,{start},{end})',"
                 f"drawtext=fontfile=font.ttf:text='{block['left_color']}':fontcolor=white:fontsize=35:"
                 f"x=(w-900)/2+80+(330-tw)/2:y=(h-450)/2+335:enable='between(t,{start},{end})':alpha='{alpha_func}',"
                 # Правый квадрат (цвет +50)
-                f"drawbox=x=(w-900)/2+490:y=(h-450)/2+120:w=330:h=200:color={block['right_color']}:t=fill:enable='between(t,{start},{end})':alpha='{alpha_func}',"
+                f"drawbox=x=(w-900)/2+490:y=(h-450)/2+120:w=330:h=200:color={block['right_color']}:t=fill:enable='between(t,{start},{end})',"
                 f"drawtext=fontfile=font.ttf:text='{block['right_color']}':fontcolor=white:fontsize=35:"
                 f"x=(w-900)/2+490+(330-tw)/2:y=(h-450)/2+335:enable='between(t,{start},{end})':alpha='{alpha_func}'[{next_label}]"
             )
@@ -208,6 +219,7 @@ def create_video(hex_code, music, output):
         prev_label = next_label
 
     intro_chain = ";".join(intro_filters)
+            
 
     cmd = [
         'ffmpeg', '-y', 
