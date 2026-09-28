@@ -105,17 +105,17 @@ def create_video(hex_code, music, output):
     if not os.path.exists("font.ttf"):
         raise FileNotFoundError("Шрифт font.ttf не найден в репозитории!")
 
-    # Считаем RGB и название цвета
+    # Считаем RGB, название цвета и индекс для сравнения (+50 шагов)
     hex_clean = hex_code.lstrip('#')
     r_val = int(hex_clean[0:2], 16)
     g_val = int(hex_clean[2:4], 16)
     b_val = int(hex_clean[4:6], 16)
     color_name = get_color_name(r_val, g_val, b_val)
     
-    # Вычисляем цвет для сравнения (+50 шагов вперед, слева текущий, справа +50)
+    current_index = int(hex_clean, 16)
     comparison_index = min(current_index + 50, 16777215)
     comparison_hex = f"#{comparison_index:06X}"
-
+    
     # 1. Жесткий 2-й слот (4-8 сек) — всегда название цвета с плашкой
     mandatory_block = {
         "text": f"{hex_code} - {color_name}", 
@@ -208,14 +208,13 @@ def create_video(hex_code, music, output):
         prev_label = next_label
 
     intro_chain = ";".join(intro_filters)
-    
 
     cmd = [
         'ffmpeg', '-y', 
         '-f', 'lavfi', '-i', f'color=c={hex_code}:s=1920x1080:d={DURATION}',
         '-i', music,
         '-filter_complex', (
-            # 1. Интро по слотам (рандом -> жесткий цвет -> рандом)
+            # 1. Интро по слотам
             f"{intro_chain};"
 
             # 2. ТАЙМЕР (сверху справа, прозрачность 0.4)
@@ -253,6 +252,7 @@ def create_video(hex_code, music, output):
         raise
 
     logger.info(f"Видео {output} успешно создано.")
+    
     
     
     
