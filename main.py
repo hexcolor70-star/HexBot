@@ -156,7 +156,7 @@ def create_video(hex_code, music, output):
     three_extras = [random_question, comparison_block, subscribe_block]
     chosen_extras = random.sample(three_extras, k=2)
 
-     Слот 3 (8-12с)]
+    # Слот 3 (8-12с)
     chosen_blocks = [
         chosen_extras[0],
         mandatory_block,
