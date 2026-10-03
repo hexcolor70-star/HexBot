@@ -105,7 +105,7 @@ def create_video(hex_code, music, output):
     if not os.path.exists("font.ttf"):
         raise FileNotFoundError("Шрифт font.ttf не найден в репозитории!")
 
-    # Считаем RGB, название цвета и индекс для сравнения (+50 шагов)
+
     hex_clean = hex_code.lstrip('#')
     r_val = int(hex_clean[0:2], 16)
     g_val = int(hex_clean[2:4], 16)
@@ -116,15 +116,14 @@ def create_video(hex_code, music, output):
     comparison_index = min(current_index + 50, 16777215)
     comparison_hex = f"#{comparison_index:06X}"
     
-    # 1. Жесткий 2-й слот (4-8 сек) — всегда название цвета с плашкой
+
     mandatory_block = {
         "text": f"{hex_code} - {color_name}", 
         "box": True, 
         "fontsize": 60,
         "is_table": False
     }
-    
-    # 2. Пул из 10 вопросов для первого варианта
+
     questions_pool = [
         {"text": f"Do you like Color {hex_code}?", "box": False, "fontsize": 80, "is_table": False},
         {"text": f"Would you use {hex_code} in your design?", "box": False, "fontsize": 80, "is_table": False},
@@ -139,7 +138,7 @@ def create_video(hex_code, music, output):
     ]
     random_question = random.choice(questions_pool)
 
-    # 3. Блок сравнения цвета (Таблица: слева текущий, справа +50)
+
     comparison_block = {
         "is_table": True,
         "left_color": hex_code,
@@ -147,7 +146,6 @@ def create_video(hex_code, music, output):
         "fontsize": 60
     }
 
-    # 4. Блок подписки
     subscribe_block = {
         "text": "Subscribe and like this video!", 
         "box": False, 
@@ -155,23 +153,21 @@ def create_video(hex_code, music, output):
         "is_table": False
     }
 
-    # Собираем общую тройку элементов, из которой случайно берем 2 разных для 1-го и 3-го слотов
     three_extras = [random_question, comparison_block, subscribe_block]
     chosen_extras = random.sample(three_extras, k=2)
 
-    # Итоговый порядок: [Слот 1 (0-4с), Слот 2 (4-8с — цвет), Слот 3 (8-12с)]
+     Слот 3 (8-12с)]
     chosen_blocks = [
         chosen_extras[0],
         mandatory_block,
         chosen_extras[1]
     ]
 
-    # ЛОГИРУЕМ ПОРЯДОК для проверки в консоли
+
     block_texts = [b.get('text', 'COMPARISON_TABLE') for b in chosen_blocks]
     logger.info(f"Порядок слотов (0-4с, 4-8с [ЦВЕТ], 8-12с): {block_texts}")
 
 
-    # Динамически собираем фильтры для 3 слотов по 4 секунды
     intro_filters = []
     prev_label = "0:v"
     
@@ -272,16 +268,13 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
     g = int(hex_clean[2:4], 16)
     b = int(hex_clean[4:6], 16)
     color_name = get_color_name(r, g, b)
-
-    # Дальше идет твой старый код загрузки с описанием, где теперь есть color_name...
-
     r_n, g_n, b_n = r / 255.0, g / 255.0, b / 255.0
     c_max, c_min = max(r_n, g_n, b_n), min(r_n, g_n, b_n)
     lum = round(((c_max + c_min) / 2) * 100)
 
     track_title = os.path.splitext(chosen_track)[0]
 
-    # 2. Динамический пул тегов (генерируем заранее, чтобы использовать и в API, и в описании)
+
     base_tags = [
         hex_code, 
         f"hex {hex_code}", 
@@ -299,12 +292,10 @@ def upload_video(youtube, video_file, hex_code, chosen_track):
     ]
     chosen_tags = random.sample(base_tags, k=8)
 
-    # Формируем строки для текста описания из выбранных тегов
     keywords_str = ", ".join(chosen_tags)
-    # Делаем хэштеги (убираем пробелы из фраз для валидности хэштегов, например #hex00ff00)
+  
     hashtags_str = " ".join([f"#{tag.replace(' ', '')}" for tag in chosen_tags])
 
-    # 3. Описание (3 шаблона) с добавлением ключевых слов и хэштегов в конец
     desc_1 = f"""Color Code: {hex_code}
 This is a visual reference for the HEX color {hex_code}. 
 This video is part of a massive project to document all 16,777,216 colors in the RGB spectrum.
@@ -367,7 +358,6 @@ Keywords: {keywords_str}
 
     description = random.choice([desc_1, desc_2, desc_3])
 
-    # 4. Сборка тела запроса
     body = {
         'snippet': {
             'title': f"What does {hex_code} - {color_name} look like? | Color Code Preview",
