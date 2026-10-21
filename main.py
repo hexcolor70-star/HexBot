@@ -37,10 +37,10 @@ list_base = ["Sapphire", "Ruby", "Emerald", "Amethyst", "Topaz", "Obsidian", "Am
 
 def get_color_name(r, g, b):
     rgb_int = (r << 16) | (g << 8) | b
-    idx1 = (rgb_int >> 18) & 0x3F
-    idx2 = (rgb_int >> 12) & 0x3F
-    idx3 = (rgb_int >> 6) & 0x3F
-    idx4 = rgb_int & 0x3F
+    idx1 = min((rgb_int >> 18) & 0x3F, len(list_intensity) - 1)
+    idx2 = min((rgb_int >> 12) & 0x3F, len(list_texture) - 1)
+    idx3 = min((rgb_int >> 6) & 0x3F, len(list_modifier) - 1)
+    idx4 = min(rgb_int & 0x3F, len(list_base) - 1)
     return f"{list_intensity[idx1]} {list_texture[idx2]} {list_modifier[idx3]} {list_base[idx4]}"
     
 
