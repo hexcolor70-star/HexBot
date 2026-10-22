@@ -311,6 +311,11 @@ Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/
 
+Chapters:
+0:00 - Intro & Quick Poll
+0:12 - Main Color Display
+4:55 - Outro & Thanks
+
 Keywords: {keywords_str}
 
 {hashtags_str}"""
@@ -326,6 +331,12 @@ Specifications:
 - Audio Track: {track_title}
 - Archive: Visual HEX Color Library
 - Name of Color: {color_name}
+
+Timestamps:
+0:00 - Introduction
+0:12 - Color Preview ({hex_code})
+4:55 - Final Thoughts
+
 
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
@@ -351,6 +362,12 @@ Audio & Credits:
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/
+
+Timeline:
+0:00 - Start
+0:12 - Color Focus
+4:55 - Ending
+
 
 Keywords: {keywords_str}
 
