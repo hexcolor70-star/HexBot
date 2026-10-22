@@ -337,7 +337,6 @@ Timestamps:
 0:12 - Color Preview ({hex_code})
 4:55 - Final Thoughts
 
-
 Licensed under Creative Commons Attribution 4.0:
 Source: http://incompetech.com/music/royalty-free/index.html
 Music by Kevin MacLeod: http://incompetech.com/music/
@@ -367,7 +366,6 @@ Timeline:
 0:00 - Start
 0:12 - Color Focus
 4:55 - Ending
-
 
 Keywords: {keywords_str}
 
