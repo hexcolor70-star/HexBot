@@ -20,7 +20,15 @@ MUSIC_TRACKS = [
     "Sydney's Skyline - ALBIS.aac",
     "Clover 3 - Vibe Mountain.aac",
     "Radio Flyer - Nathan Moore.aac",
-    "The Palace Gardens - Asher Fulero.aac"
+    "The Palace Gardens - Asher Fulero.aac",
+    Final Soliloquy - Asher Fulero.m4a",
+    Flowers - Anno Domini Beats.m4a",
+    Jomon Grove - The Mini Vandals.m4a",
+    Pulsar - The Grey Room _ Density & Time.m4a",
+    Rapid Unscheduled Disassembly - The Grey Room _ Density & Time.m4a",
+    A Starry Message - Dan _Lebo_ Lebowitz, Tone Seeker.m4a",
+    City lights - Patrick Patrikios.m4a",
+    Denied Access - Density & Time.m4a"
 ]
 DURATION = 300  # 5 минут
 
