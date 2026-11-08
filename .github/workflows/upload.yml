@@ -16,10 +16,31 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      # 2. Скачивание и распаковка аудио из релизов GitHub
-      - name: Download and Extract Audio Assets
+      # 2. Скачивание и распаковка архива из релизов GitHub с защитой от сбоев
+      - name: Download and Extract Assets with Retry
         run: |
-          curl -L -o HexBot-main.zip "https://github.com/hexcolor70-star/HexBot/releases/download/v1.0/HexBot-main.zip"
+          for i in {1..5}; do
+            echo "Attempt $i to download release asset..."
+            curl -L -o HexBot-main.zip "https://github.com/hexcolor70-star/HexBot/releases/download/v1.0/HexBot-main.zip"
+            
+            # Проверяем, что файл скачался, весит больше 1 КБ и является валидным архивом
+            if [ -f HexBot-main.zip ] && [ $(stat -c%s "HexBot-main.zip") -gt 1000 ]; then
+              if unzip -tq HexBot-main.zip > /dev/null 2>&1; then
+                echo "Download successful and archive is valid!"
+                break
+              fi
+            fi
+            
+            echo "Download failed or archive is corrupt. Retrying in 5 seconds..."
+            rm -f HexBot-main.zip
+            sleep 5
+          done
+          
+          if [ ! -f HexBot-main.zip ]; then
+            echo "Error: Failed to download valid archive after 5 attempts."
+            exit 1
+          fi
+
           unzip -q HexBot-main.zip -d extracted_assets
           cp -r extracted_assets/HexBot-main/* ./
           rm -rf HexBot-main.zip extracted_assets
@@ -37,7 +58,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 4. Кэш для Python-библиотек (чтобы не качать каждый раз)
+      # 4. Кэш для Python-библиотек
       - name: Cache Pip Packages
         uses: actions/cache@v4
         with:
