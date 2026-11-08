@@ -16,14 +16,20 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      # 2. Скачивание и распаковка аудио из релизов GitHub
+      - name: Download and Extract Audio Assets
+        run: |
+          curl -L -o HexBot-main.zip "https://github.com/hexcolor70-star/HexBot/releases/download/v1.0/HexBot-main.zip"
+          unzip -q HexBot-main.zip -d extracted_assets
+          cp -r extracted_assets/HexBot-main/* ./
+          rm -rf HexBot-main.zip extracted_assets
+
       - name: Install FFmpeg
         run: |
           curl -L -O https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
           tar -xf ffmpeg-master-latest-linux64-gpl.tar.xz
-          # Переносим бинарник в папку, доступную в PATH, или прописываем путь до него
           sudo mv ffmpeg-master-latest-linux64-gpl/bin/ffmpeg /usr/local/bin/
           sudo mv ffmpeg-master-latest-linux64-gpl/bin/ffprobe /usr/local/bin/
-          
 
       # 3. Настройка Python
       - name: Set up Python
@@ -51,4 +57,3 @@ jobs:
         env:
           G_TOKEN_JSON: ${{ secrets.G_TOKEN_JSON }}
         run: python main.py
-        
