@@ -21,7 +21,8 @@ jobs:
         run: |
           for i in {1..5}; do
             echo "Attempt $i to download release asset..."
-            curl -L -o HexBot-main.zip "https://github.com/hexcolor70-star/HexBot/releases/download/v1.0/HexBot-main.zip"
+            # Флаг -C - для докачки при обрыве связи и внутренние ретраи curl
+            curl -L -C - --retry 5 --retry-delay 5 --retry-connrefused -o HexBot-main.zip "https://github.com/hexcolor70-star/HexBot/releases/download/v1.0/HexBot-main.zip"
             
             # Проверяем, что файл скачался, весит больше 1 КБ и является валидным архивом
             if [ -f HexBot-main.zip ] && [ $(stat -c%s "HexBot-main.zip") -gt 1000 ]; then
@@ -31,12 +32,12 @@ jobs:
               fi
             fi
             
-            echo "Download failed or archive is corrupt. Retrying in 5 seconds..."
+            echo "Download incomplete or archive is corrupt. Retrying in 5 seconds..."
             rm -f HexBot-main.zip
             sleep 5
           done
           
-          if [ ! -f HexBot-main.zip ]; then
+          if [ ! -f HexBot-main.zip ] || ! unzip -tq HexBot-main.zip > /dev/null 2>&1; then
             echo "Error: Failed to download valid archive after 5 attempts."
             exit 1
           fi
@@ -45,9 +46,10 @@ jobs:
           cp -r extracted_assets/HexBot-main/* ./
           rm -rf HexBot-main.zip extracted_assets
 
+      # Заодно добавлена страховка на скачивание FFmpeg
       - name: Install FFmpeg
         run: |
-          curl -L -O https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
+          curl -L -C - --retry 3 -O https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
           tar -xf ffmpeg-master-latest-linux64-gpl.tar.xz
           sudo mv ffmpeg-master-latest-linux64-gpl/bin/ffmpeg /usr/local/bin/
           sudo mv ffmpeg-master-latest-linux64-gpl/bin/ffprobe /usr/local/bin/
